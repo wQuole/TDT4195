@@ -5,9 +5,11 @@
 #include "gloom/shader.hpp"
 #include "vector"
 
-GLuint setUpVAOTriangle(std::vector<GLfloat> vertexCoords, std::vector<GLuint> vertexIndices);
+using namespace std;
 
-GLuint setUpVAOTriangle(std::vector<GLfloat> vertexCoords, std::vector<GLuint> vertexIndices)
+GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices);
+
+GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices)
 {
     auto vectorSizeInBytes = vertexCoords.size() * sizeof(GLfloat);
     auto dataWhichShouldBeCopiedToTheGPU = vertexIndices.size() * sizeof(GLuint);
@@ -51,22 +53,26 @@ void runProgram(GLFWwindow* window)
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
 
     // Set up your scene here (create Vertex Array Objects, etc.)
-    std::string vertPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.vert"; // "../gloom/shaders/simple.vert"
-    std::string fragPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.frag"; // "../gloom/shaders/simple.frag"
+    string vertPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.vert"; // "../gloom/shaders/simple.vert"
+    string fragPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.frag"; // "../gloom/shaders/simple.frag"
     Gloom::Shader shader;
     shader.makeBasicShader(vertPath,
                            fragPath);
+    vector<GLfloat> triangleCoordinates {
+            0.6, -0.6, 0.3,
+            -0.6, -0.6, 0.2,
+            0.0, 0.6, 0.1,
 
-    std::vector<GLfloat> triangleCoordinates {
-        -0.6, -0.6, 0.0,
-        0.6, -0.6, 0.0,
-        0.0, 0.6, 0.0
+            -1.0, -1.0, .0,
+            1.0, -1.0, 0.0,
+            0.0, 1.0, 0.0,
     };
 
-    std::vector<GLuint> triangleIndices(triangleCoordinates.size());
+
+    vector<GLuint> triangleIndices(triangleCoordinates.size());
 
     // Fill the indices
-    std::iota(triangleIndices.begin(), triangleIndices.end(), 0);
+    iota(triangleIndices.begin(), triangleIndices.end(), 0);
 
     // Create "arrayID" for VAO
     GLuint triAngleVAO = setUpVAOTriangle(triangleCoordinates, triangleIndices);
@@ -75,6 +81,7 @@ void runProgram(GLFWwindow* window)
     shader.activate();
     glBindVertexArray(triAngleVAO);
 
+    uint numberOfVertices = (int) triangleCoordinates.size()/3;
     // Rendering Loop
     printGLError();
     while (!glfwWindowShouldClose(window))
@@ -83,7 +90,7 @@ void runProgram(GLFWwindow* window)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Draw your scene here
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, numberOfVertices , GL_UNSIGNED_INT, nullptr);
 
         // Handle other events
         glfwPollEvents();
