@@ -5,6 +5,36 @@
 
 GLuint setUpVAOTriangle(std::vector<GLfloat> vertexCoords, std::vector<GLuint> vertexIndices);
 
+GLuint setUpVAOTriangle(std::vector<GLfloat> *vertexCoords, std::vector<GLuint> *vertexIndices)
+{
+    size_t vectorSizeInBytes = vertexCoords->size() * sizeof(GLfloat);
+    auto dataWhichShouldBeCopiedToTheGPU = vertexIndices->size() * sizeof(GLuint);
+
+    // Bind the Vertex Array Object (VAO)
+    GLuint vertexArrayID = 0;
+    glGenVertexArrays(1, &vertexArrayID);
+    glBindVertexArray(vertexArrayID);
+
+    // Create Vertex Buffer Object (VBO)
+    GLuint vertexBufferID = 0;
+    glGenBuffers(1, &vertexBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+    glBufferData(GL_ARRAY_BUFFER, vectorSizeInBytes, &vertexCoords->front(), GL_STATIC_DRAW);
+
+    // Set Vertex Attribute Pointer (VAP)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, GL_ZERO, GL_ZERO);
+    glEnableVertexAttribArray(0);
+
+    // Set index buffer
+    GLuint indexBufferID = 0;
+    glGenBuffers(1, &indexBufferID);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, dataWhichShouldBeCopiedToTheGPU, &vertexIndices->front(), GL_STATIC_DRAW);
+
+    return vertexBufferID;
+}
+
+
 void runProgram(GLFWwindow* window)
 {
     // Enable depth (Z) buffer (accept "closest" fragment)
@@ -37,34 +67,6 @@ void runProgram(GLFWwindow* window)
     }
 }
 
-GLuint setUpVAOTriangle(std::vector<GLfloat> *vertexCoords, std::vector<GLuint> *vertexIndices)
-{
-    size_t vectorSizeInBytes = vertexCoords->size() * sizeof(GLfloat);
-    auto dataWhichShouldBeCopiedToTheGPU = vertexIndices->size() * sizeof(GLuint);
-
-    // Bind the Vertex Array Object (VAO)
-    GLuint vertexArrayID = 0;
-    glGenVertexArrays(1, &vertexArrayID);
-    glBindVertexArray(vertexArrayID);
-
-    // Create Vertex Buffer Object (VBO)
-    GLuint vertexBufferID = 0;
-    glGenBuffers(1, &vertexBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-    glBufferData(GL_ARRAY_BUFFER, vectorSizeInBytes, &vertexCoords->front(), GL_STATIC_DRAW);
-
-    // Set Vertex Attribute Pointer (VAP)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, GL_ZERO, GL_ZERO);
-    glEnableVertexAttribArray(0);
-
-    // Set index buffer
-    GLuint indexBufferID = 0;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, dataWhichShouldBeCopiedToTheGPU, &vertexIndices->front(), GL_STATIC_DRAW);
-
-    return vertexBufferID;
-}
 
 void handleKeyboardInput(GLFWwindow* window)
 {
