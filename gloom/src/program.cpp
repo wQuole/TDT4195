@@ -7,6 +7,8 @@
 
 using namespace std;
 
+unsigned int NUM_OF_VERTCOORDS = 3;
+
 GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices);
 
 GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices)
@@ -59,31 +61,48 @@ void runProgram(GLFWwindow* window)
     shader.makeBasicShader(vertPath,
                            fragPath);
     vector<GLfloat> triangleCoordinates {
-            0.6, -0.6, 0.3,
-            -0.6, -0.6, 0.2,
-            0.0, 0.6, 0.1,
-
-            -1.0, -1.0, .0,
-            1.0, -1.0, 0.0,
-            0.0, 1.0, 0.0,
+        0.6f, -0.8f, -1.2f,
+        0.0f, 0.4f, 0.0f,
+        -0.8f,-0.2f, 1.2f
     };
 
+    vector<GLfloat> fiveTrianglesCoordinates {
+        -1.0f, 0.2f, 0.0f,
+        -0.8f, 0.0f, 0.0f,
+        -0.6f, 0.2f, 0.0f,
 
-    vector<GLuint> triangleIndices(triangleCoordinates.size());
+        -0.6f, 0.2f, 0.0f,
+        -0.4f, 0.0f, 0.0f,
+        -0.2f, 0.2f, 0.0f,
+
+        -0.2f, 0.4f, 0.0f,
+        0.0f, -0.1f, 0.0f,
+        0.2f, 0.4f, 0.0f,
+
+        0.2f, 0.2f, 0.0f,
+        0.4f, 0.0f, 0.0f,
+        0.6f, 0.2f, 0.0f,
+
+        0.6f, 0.2f, 0.0f,
+        0.8f, 0.0f, 0.0f,
+        1.0f, 0.2f, 0.0f
+    };
+
+    // Initialize the indices for the triangles
+    vector<GLuint> triangleIndices(fiveTrianglesCoordinates.size());
 
     // Fill the indices
     iota(triangleIndices.begin(), triangleIndices.end(), 0);
 
     // Create "arrayID" for VAO
-    GLuint triAngleVAO = setUpVAOTriangle(triangleCoordinates, triangleIndices);
+    GLuint triAngleVAO = setUpVAOTriangle(fiveTrianglesCoordinates, triangleIndices);
 
-    // Activate shader and bind the Vertex Array
+    // Activate shader and bind the Vertex Array Object
     shader.activate();
     glBindVertexArray(triAngleVAO);
 
-    uint numberOfVertices = (int) triangleCoordinates.size()/3;
+    uint numberOfVertices = (int) fiveTrianglesCoordinates.size() / NUM_OF_VERTCOORDS;
     // Rendering Loop
-    printGLError();
     while (!glfwWindowShouldClose(window))
     {
         // Clear colour and depth buffers
@@ -91,6 +110,9 @@ void runProgram(GLFWwindow* window)
 
         // Draw your scene here
         glDrawElements(GL_TRIANGLES, numberOfVertices , GL_UNSIGNED_INT, nullptr);
+
+        // Check if an OpenGL error occurred, if so print which
+        printGLError();
 
         // Handle other events
         glfwPollEvents();
