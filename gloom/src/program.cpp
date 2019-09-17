@@ -9,12 +9,13 @@ using namespace std;
 
 unsigned int NUM_OF_VERTCOORDS = 3;
 
-GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices);
+GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> vertexColors);
 
-GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices)
+GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> vertexColors)
 {
     auto vectorSizeInBytes = vertexCoords.size() * sizeof(GLfloat);
     auto dataWhichShouldBeCopiedToTheGPU = vertexIndices.size() * sizeof(GLuint);
+    auto colorSizeInBytes = vertexColors.size() * sizeof(GLfloat);
 
     // Bind the Vertex Array Object (VAO)
     GLuint vertexArrayID = 0;
@@ -27,9 +28,17 @@ GLuint setUpVAOTriangle(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndic
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
     glBufferData(GL_ARRAY_BUFFER, vectorSizeInBytes, &vertexCoords.front(), GL_STATIC_DRAW);
 
+    GLuint colorBufferID = 1;
+    glGenBuffers(1, &colrBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+    glBuffeData(GL_ARRAY_BUFFER, vectorSizeInBytes, &vertexColors.front(), GL_STATIC_DRAW); 
+
     // Set Vertex Attribute Pointer (VAP)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, GL_ZERO, nullptr);
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, GL_ZERO, nullptr);
+    glEnableVertexAttribArray(1);
 
     // Set index buffer
     GLuint indexBufferID = 0;
@@ -67,26 +76,40 @@ void runProgram(GLFWwindow* window)
     };
 
     vector<GLfloat> fiveTrianglesCoordinates {
-        -1.0f, 0.2f, 0.0f,
-        -0.8f, 0.0f, 0.0f,
-        -0.6f, 0.2f, 0.0f,
-
-        -0.6f, 0.2f, 0.0f,
-        -0.4f, 0.0f, 0.0f,
-        -0.2f, 0.2f, 0.0f,
-
-        -0.2f, 0.4f, 0.0f,
-        0.0f, -0.1f, 0.0f,
-        0.2f, 0.4f, 0.0f,
-
-        0.2f, 0.2f, 0.0f,
-        0.4f, 0.0f, 0.0f,
-        0.6f, 0.2f, 0.0f,
-
-        0.6f, 0.2f, 0.0f,
-        0.8f, 0.0f, 0.0f,
-        1.0f, 0.2f, 0.0f
+         -1.0f, 0.2f, 0.0f,
+         -0.8f, 0.0f, 0.0f,
+         -0.6f, 0.2f, 0.0f,
+ 
+         -0.6f, 0.2f, 0.0f,
+         -0.4f, 0.0f, 0.0f,
+         -0.2f, 0.2f, 0.0f,
+ 
+         -0.2f, 0.4f, 0.0f,
+         0.0f, -0.1f, 0.0f,
+         0.2f, 0.4f, 0.0f,
+ 
+         0.2f, 0.2f, 0.0f,
+         0.4f, 0.0f, 0.0f,
+         0.6f, 0.2f, 0.0f,
+ 
+         0.6f, 0.2f, 0.0f,
+         0.8f, 0.0f, 0.0f,
+         1.0f, 0.2f, 0.0f
     };
+
+    vector<GLfloat> prettyColrs {
+        -0.0f, 0.5f, 0.0f, 0.8f,
+         0.0f, 0.5f, 0.0f, 0.8f,
+         0.0f, 0.5f, 0.0f, 0.8f,
+
+         0.0f, 0.5f, 0.0f, 0.8f,
+         0.0f, 0.5f, 0.0f, 0.8f,
+         0.0f, 0.5f, 0.0f, 0.8f,
+
+         0.0f, 0.5f, 0.0f, 0.8f,
+         0.0f, 0.5f, 0.0f, 0.8f,
+         0.0f, 0.5f, 0.0f, 0.8f,
+    }
 
     // Initialize the indices for the triangles
     vector<GLuint> triangleIndices(fiveTrianglesCoordinates.size());
@@ -95,7 +118,7 @@ void runProgram(GLFWwindow* window)
     iota(triangleIndices.begin(), triangleIndices.end(), 0);
 
     // Create "arrayID" for VAO
-    GLuint triAngleVAO = setUpVAOTriangle(fiveTrianglesCoordinates, triangleIndices);
+    GLuint triAngleVAO = setUpVAOTriangle(triagnleCoordinates, triangleIndices, prettyColors);
 
     // Activate shader and bind the Vertex Array Object
     shader.activate();
