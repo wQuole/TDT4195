@@ -1,9 +1,13 @@
-// Local headers
 #include <numeric>
+#include "vector"
+// Local headers
 #include "program.hpp"
 #include "gloom/gloom.hpp"
 #include "gloom/shader.hpp"
-#include "vector"
+
+using namespace std;
+
+unsigned int NUM_OF_VERTCOORDS = 3;
 
 GLuint setUpVAOTriangle(std::vector<GLfloat> vertexCoords, std::vector<GLuint> vertexIndices);
 
@@ -26,7 +30,7 @@ GLuint setUpVAOTriangle(std::vector<GLfloat> vertexCoords, std::vector<GLuint> v
     // Set Vertex Attribute Pointer (VAP)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, GL_ZERO, nullptr);
     glEnableVertexAttribArray(0);
-                                                                
+
     // Set index buffer
     GLuint indexBufferID = 0;
     glGenBuffers(1, &indexBufferID);
@@ -47,33 +51,56 @@ void runProgram(GLFWwindow* window)
     glEnable(GL_CULL_FACE);
 
     // Set default colour after clearing the colour buffer
-    glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
+    glClearColor(0.375f, 0.25f, 0.25f, 1.0f);
 
     // Set up your scene here (create Vertex Array Objects, etc.)
-    std::string vertPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.vert"; // "../gloom/shaders/simple.vert"
-    std::string fragPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.frag"; // "../gloom/shaders/simple.frag"
+    string vertPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.vert"; // "../gloom/shaders/simple.vert"
+    string fragPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.frag"; // "../gloom/shaders/simple.frag"
     Gloom::Shader shader;
     shader.makeBasicShader(vertPath,
                            fragPath);
 
-    std::vector<GLfloat> triangleCoordinates {
-        -0.6, -0.6, 0.0,
-        0.6, -0.6, 0.0,
-        0.0, 0.6, 0.0
+    vector<GLfloat> one_triangle {
+        -0.9f, -0.3f, -0.1f,
+        -0.6f, -0.3f, -0.1f,
+        0.0f, -1.0f, -0.1f
     };
 
-    std::vector<GLuint> triangleIndices(triangleCoordinates.size());
+    vector<GLfloat> fiveTrianglesCoordinates {
+            -1.0f, 0.2f, 0.0f,
+            -0.8f, 0.0f, 0.0f,
+            -0.6f, 0.2f, 0.0f,
+
+            -0.6f, 0.2f, 0.0f,
+            -0.4f, 0.0f, 0.0f,
+            -0.2f, 0.2f, 0.0f,
+
+            -0.2f, 0.4f, 0.0f,
+            0.0f, -0.1f, 0.0f,
+            0.2f, 0.4f, 0.0f,
+
+            0.2f, 0.2f, 0.0f,
+            0.4f, 0.0f, 0.0f,
+            0.6f, 0.2f, 0.0f,
+
+            0.6f, 0.2f, 0.0f,
+            0.8f, 0.0f, 0.0f,
+            1.0f, 0.2f, 0.0f
+    };
+
+    vector<GLuint> triangleIndices(fiveTrianglesCoordinates.size());
 
     // Fill the indices
-    std::iota(triangleIndices.begin(), triangleIndices.end(), 0);
+    iota(triangleIndices.begin(), triangleIndices.end(), 0);
 
     // Create "arrayID" for VAO
-    GLuint triAngleVAO = setUpVAOTriangle(triangleCoordinates, triangleIndices);
+    GLuint arrayID = setUpVAOTriangle(fiveTrianglesCoordinates, triangleIndices);
 
     // Activate shader and bind the Vertex Array
     shader.activate();
-    glBindVertexArray(triAngleVAO);
+    glBindVertexArray(arrayID);
 
+    uint numberOfVertices = (int) fiveTrianglesCoordinates.size()/NUM_OF_VERTCOORDS;
     // Rendering Loop
     printGLError();
     while (!glfwWindowShouldClose(window))
@@ -82,7 +109,10 @@ void runProgram(GLFWwindow* window)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Draw your scene here
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, nullptr);
+
+        // Check if an OpenGL error occurred, if so print which
+        printGLError();
 
         // Handle other events
         glfwPollEvents();
