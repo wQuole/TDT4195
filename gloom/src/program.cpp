@@ -1,4 +1,5 @@
 #include <numeric>
+#include <cmath>
 #include "vector"
 // Local headers
 #include "program.hpp"
@@ -56,7 +57,6 @@ void runProgram(GLFWwindow* window)
     // Enable depth (Z) buffer (accept "closest" fragment)
 //    glEnable(GL_DEPTH_TEST);
 //    glDepthFunc(GL_GREATER);
-//    glClearDepth(-1);
 
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
@@ -66,7 +66,8 @@ void runProgram(GLFWwindow* window)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Set default colour after clearing the colour buffer AKA setting the background color
-    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+//    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     vector<GLfloat> threeOverlappingTriangles {
             -0.60f, -0.25f, -0.5f,
@@ -94,6 +95,7 @@ void runProgram(GLFWwindow* window)
             0.0f, 0.0f, 0.5f, 0.5f,
             0.0f, 0.0f, 0.5f, 0.5f,
             0.0f, 0.0f, 0.5f, 0.5f,
+
     };
 
     vector<GLfloat> fiveTriangles {
@@ -163,6 +165,7 @@ void runProgram(GLFWwindow* window)
     GLuint numberOfVertices = (int) threeOverlappingTriangles.size() / NUM_OF_VERTCOORDS;
     // Rendering Loop
     printGLError();
+    GLuint increment =  0;
     while (!glfwWindowShouldClose(window))
     {
         // Clear colour and depth buffers
@@ -170,6 +173,11 @@ void runProgram(GLFWwindow* window)
 
         // Draw your scene here
         glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, nullptr);
+
+        // Modify oscillation
+        increment++;
+        if (increment > 360) increment = 0;
+        glUniform1f(2, sin(increment*(3.14/180)));
 
         // Check if an OpenGL error occurred, if so print which
         printGLError();
