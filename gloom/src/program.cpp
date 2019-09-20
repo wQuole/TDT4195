@@ -5,10 +5,21 @@
 #include "program.hpp"
 #include "gloom/gloom.hpp"
 #include "gloom/shader.hpp"
+// Camera headers
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/vec3.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
 
 unsigned int NUM_OF_VERTCOORDS = 3;
+GLfloat X_COORD = 0.0f;
+GLfloat Y_COORD = 0.0f;
+GLfloat Z_COORD = -3.0f;
+GLfloat X_ROT = 0.0f;
+GLfloat Y_ROT = -0.0f;
 
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors);
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors)
@@ -57,7 +68,7 @@ void runProgram(GLFWwindow* window)
     // Enable depth (Z) buffer (accept "closest" fragment)
 //    glEnable(GL_DEPTH_TEST);
 //    glDepthFunc(GL_GREATER);
-
+//    glClearDepth(-1);
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
 
@@ -67,7 +78,7 @@ void runProgram(GLFWwindow* window)
 
     // Set default colour after clearing the colour buffer AKA setting the background color
 //    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 
     vector<GLfloat> threeOverlappingTriangles {
             -0.60f, -0.25f, -0.5f,
@@ -121,25 +132,25 @@ void runProgram(GLFWwindow* window)
     };
 
     vector<GLfloat> fiveTrianglesColors = {
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
+            0.5f, 0.0f, 0.0f, 0.7331f,
+            0.0f, 0.5f, 0.0f, 0.7331f,
+            0.0f, 0.0f, 0.5f, 0.7331f,
 
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
+            0.5f, 0.0f, 0.0f, 0.7331f,
+            0.0f, 0.5f, 0.0f, 0.7331f,
+            0.0f, 0.0f, 0.5f, 0.7331f,
 
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
+            0.5f, 0.0f, 0.0f, 0.7331f,
+            0.0f, 0.5f, 0.0f, 0.7331f,
+            0.0f, 0.0f, 0.5f, 0.7331f,
 
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
+            0.5f, 0.0f, 0.0f, 0.7331f,
+            0.0f, 0.5f, 0.0f, 0.7331f,
+            0.0f, 0.0f, 0.5f, 0.7331f,
 
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
+            0.5f, 0.0f, 0.0f, 0.7331f,
+            0.0f, 0.5f, 0.0f, 0.7331f,
+            0.0f, 0.0f, 0.5f, 0.7331f,
     };
 
 
@@ -150,6 +161,10 @@ void runProgram(GLFWwindow* window)
     string fragPath = "C:\\Users\\wquole\\code\\cppCode\\TDT4195\\gloom\\shaders\\simple.frag"; // Windows
     Gloom::Shader shader;
     shader.makeBasicShader(vertPath,fragPath);
+
+    // Create identity- and perspective Matrices
+    glm::mat4x4 identityMatrix = glm::mat4(1.0f);
+    glm::mat4x4 Projection = glm::perspective(45.0f, 4.0f/3.0f, 1.0f, 100.0f); // https://glm.g-truc.net/0.9.9/index.html
 
     // Fill the indices
     vector<GLuint> triangleIndices(threeOverlappingTriangles.size());
@@ -171,13 +186,32 @@ void runProgram(GLFWwindow* window)
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Draw your scene here
-        glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, nullptr);
+        // T R A N S F O R M A T I O N S
+        // Transposing --> ref: https://stackoverflow.com/questions/13293469/why-does-my-translation-matrix-needs-to-be-transposed
+
+        // Translation
+        glm::mat4x4 View = glm::translate(glm::mat4(), glm::vec3(X_COORD, Y_COORD, Z_COORD));
+        glm::mat4x4 ViewTransposed = glm::transpose(View);
+
+        // Rotation
+        glm::mat4x4 X_rotMatrix = glm::rotate(glm::radians(X_ROT), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4x4 Y_rotMatrix = glm::rotate(glm::radians(Y_ROT), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4x4 X_rotTransposed =glm::transpose(X_rotMatrix);
+        glm::mat4x4 Y_rotTransposed =glm::transpose(Y_rotMatrix);
+
+        // Result aka Final Matrix
+        glm::mat4x4 TransformedMatrix = X_rotTransposed * Y_rotTransposed * ViewTransposed * Projection * identityMatrix;
+
+        // Send to Vertex Shader
+        glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(TransformedMatrix));
 
         // Modify oscillation
         increment++;
         if (increment > 360) increment = 0;
         glUniform1f(2, sin(increment*(3.14/180)));
+
+        // Draw your scene here
+        glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, nullptr);
 
         // Check if an OpenGL error occurred, if so print which
         printGLError();
@@ -199,5 +233,44 @@ void handleKeyboardInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+    else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    {
+        X_COORD -= 0.01;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    {
+        X_COORD += 0.01;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        Y_COORD += 0.01;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        Y_COORD -= 0.01;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        Z_COORD += 0.01;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    {
+        Z_COORD -= 0.01;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        X_ROT += 1.0;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        X_ROT -= 1.0;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        Y_ROT -= 1.0;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        Y_ROT += 1.0;
     }
 }
