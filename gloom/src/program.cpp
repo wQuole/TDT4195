@@ -5,12 +5,11 @@
 #include "program.hpp"
 #include "gloom/gloom.hpp"
 #include "gloom/shader.hpp"
-// Camera headers
+// Glm headers
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
-#include <glm/vec3.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+
 
 using namespace std;
 
@@ -68,26 +67,26 @@ void runProgram(GLFWwindow* window)
     // Enable depth (Z) buffer (accept "closest" fragment)
 //    glEnable(GL_DEPTH_TEST);
 //    glDepthFunc(GL_GREATER);
-//    glClearDepth(-1);
+
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
 
     // Enable transparency
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     // Set default colour after clearing the colour buffer AKA setting the background color
 //    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
     glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 
     vector<GLfloat> threeOverlappingTriangles {
-            -0.60f, -0.25f, -0.5f,
-            -0.10f, -0.25f, -0.5f,
-            -0.35f,  0.3f, -0.5f,
+            -0.60f, -0.25f, 0.7f,
+            -0.10f, -0.25f, 0.7f,
+            -0.35f,  0.3f, 0.7f,
 
-            -0.40f, -0.25f, 0.0f,
-            0.10f, -0.25f, 0.0f,
-            -0.15f,  0.3f, 0.0f,
+            -0.40f, -0.25f, 0.2f,
+            0.10f, -0.25f, 0.2f,
+            -0.15f,  0.3f, 0.2f,
 
             -0.20f, -0.25f, 0.5f,
             0.30f, -0.25f, 0.5f,
@@ -159,25 +158,25 @@ void runProgram(GLFWwindow* window)
     // string fragPath = "/Users/wquole/CLionProjects/TDT4195/gloom/shaders/simple.frag"; // MacOS
     string vertPath = "C:\\Users\\wquole\\code\\cppCode\\TDT4195\\gloom\\shaders\\simple.vert"; // Windows
     string fragPath = "C:\\Users\\wquole\\code\\cppCode\\TDT4195\\gloom\\shaders\\simple.frag"; // Windows
-    Gloom::Shader shader;
-    shader.makeBasicShader(vertPath,fragPath);
 
     // Create identity- and perspective Matrices
     glm::mat4x4 identityMatrix = glm::mat4(1.0f);
-    glm::mat4x4 Projection = glm::perspective(45.0f, 4.0f/3.0f, 1.0f, 100.0f); // https://glm.g-truc.net/0.9.9/index.html
+    glm::mat4x4 Projection = glm::perspective(glm::radians(45.0f), 4.0f/3.0f, 1.0f, 100.0f); // https://glm.g-truc.net/0.9.9/index.html
 
     // Fill the indices
     vector<GLuint> triangleIndices(threeOverlappingTriangles.size());
     iota(triangleIndices.begin(), triangleIndices.end(), 0);
+    GLuint numberOfVertices = (int) threeOverlappingTriangles.size() / NUM_OF_VERTCOORDS;
 
-    // Create "arrayID" for VAO
-    GLuint arrayID = createVAO(threeOverlappingTriangles, triangleIndices, threeOverlappingTrianglesColors);
 
     // Activate shader and bind the Vertex Array
+    Gloom::Shader shader;
+    shader.makeBasicShader(vertPath,fragPath);
     shader.activate();
+
+    GLuint arrayID = createVAO(threeOverlappingTriangles, triangleIndices, threeOverlappingTrianglesColors);
     glBindVertexArray(arrayID);
 
-    GLuint numberOfVertices = (int) threeOverlappingTriangles.size() / NUM_OF_VERTCOORDS;
     // Rendering Loop
     printGLError();
     GLuint increment =  0;
@@ -188,16 +187,15 @@ void runProgram(GLFWwindow* window)
 
         // T R A N S F O R M A T I O N S
         // Transposing --> ref: https://stackoverflow.com/questions/13293469/why-does-my-translation-matrix-needs-to-be-transposed
-
         // Translation
-        glm::mat4x4 View = glm::translate(glm::mat4(), glm::vec3(X_COORD, Y_COORD, Z_COORD));
+        glm::mat4x4 View = glm::translate(glm::mat4(1.0f), glm::vec3(X_COORD, Y_COORD, Z_COORD));
         glm::mat4x4 ViewTransposed = glm::transpose(View);
 
         // Rotation
         glm::mat4x4 X_rotMatrix = glm::rotate(glm::radians(X_ROT), glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4x4 Y_rotMatrix = glm::rotate(glm::radians(Y_ROT), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4x4 X_rotTransposed =glm::transpose(X_rotMatrix);
-        glm::mat4x4 Y_rotTransposed =glm::transpose(Y_rotMatrix);
+        glm::mat4x4 X_rotTransposed = glm::transpose(X_rotMatrix);
+        glm::mat4x4 Y_rotTransposed = glm::transpose(Y_rotMatrix);
 
         // Result aka Final Matrix
         glm::mat4x4 TransformedMatrix = X_rotTransposed * Y_rotTransposed * ViewTransposed * Projection * identityMatrix;
@@ -236,11 +234,11 @@ void handleKeyboardInput(GLFWwindow* window)
     }
     else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
     {
-        X_COORD -= 0.01;
+        X_COORD += 0.01;
     }
     else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
     {
-        X_COORD += 0.01;
+        X_COORD -= 0.01;
     }
     else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
@@ -266,11 +264,11 @@ void handleKeyboardInput(GLFWwindow* window)
     {
         X_ROT -= 1.0;
     }
-    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
         Y_ROT -= 1.0;
     }
-    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         Y_ROT += 1.0;
     }
 }
