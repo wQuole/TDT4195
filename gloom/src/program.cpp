@@ -69,7 +69,7 @@ void runProgram(GLFWwindow* window)
 //    glDepthFunc(GL_GREATER);
 
     // Configure miscellaneous OpenGL settings
-    glEnable(GL_CULL_FACE);
+//    glEnable(GL_CULL_FACE);
 
     // Enable transparency
     glEnable(GL_BLEND);
@@ -159,9 +159,6 @@ void runProgram(GLFWwindow* window)
     string vertPath = "C:\\Users\\wquole\\code\\cppCode\\TDT4195\\gloom\\shaders\\simple.vert"; // Windows
     string fragPath = "C:\\Users\\wquole\\code\\cppCode\\TDT4195\\gloom\\shaders\\simple.frag"; // Windows
 
-    // Create identity- and perspective Matrices
-    glm::mat4x4 identityMatrix = glm::mat4(1.0f);
-    glm::mat4x4 Projection = glm::perspective(glm::radians(45.0f), 4.0f/3.0f, 1.0f, 100.0f); // https://glm.g-truc.net/0.9.9/index.html
 
     // Fill the indices
     vector<GLuint> triangleIndices(threeOverlappingTriangles.size());
@@ -176,6 +173,9 @@ void runProgram(GLFWwindow* window)
 
     GLuint arrayID = createVAO(threeOverlappingTriangles, triangleIndices, threeOverlappingTrianglesColors);
     glBindVertexArray(arrayID);
+
+    // Create identity- and perspective Matrices
+    glm::mat4x4 Projection = glm::perspective(glm::radians(45.0f), 4.0f/3.0f, 1.0f, 100.0f); // https://glm.g-truc.net/0.9.9/index.html
 
     // Rendering Loop
     printGLError();
@@ -194,11 +194,9 @@ void runProgram(GLFWwindow* window)
         // Rotation
         glm::mat4x4 X_rotMatrix = glm::rotate(glm::radians(X_ROT), glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4x4 Y_rotMatrix = glm::rotate(glm::radians(Y_ROT), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4x4 X_rotTransposed = glm::transpose(X_rotMatrix);
-        glm::mat4x4 Y_rotTransposed = glm::transpose(Y_rotMatrix);
 
         // Result aka Final Matrix
-        glm::mat4x4 TransformedMatrix = X_rotTransposed * Y_rotTransposed * ViewTransposed * Projection * identityMatrix;
+        glm::mat4x4 TransformedMatrix = X_rotMatrix * Y_rotMatrix * ViewTransposed * Projection;
 
         // Send to Vertex Shader
         glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(TransformedMatrix));
@@ -242,33 +240,40 @@ void handleKeyboardInput(GLFWwindow* window)
     }
     else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
     {
-        Y_COORD += 0.01;
+        Y_COORD -= 0.01;
     }
     else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
     {
-        Y_COORD -= 0.01;
+        Y_COORD += 0.01;
     }
     else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        Z_COORD += 0.01;
+        Z_COORD -= 0.01;
     }
     else if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
     {
-        Z_COORD -= 0.01;
+        Z_COORD += 0.01;
     }
     else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        X_ROT += 1.0;
+        X_ROT -= 1.0;
     }
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
     {
-        X_ROT -= 1.0;
+        X_ROT += 1.0;
     }
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        Y_ROT -= 1.0;
+        Y_ROT += 1.0;
     }
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        Y_ROT += 1.0;
+        Y_ROT -= 1.0;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+        X_ROT = 0.0f;
+        Y_ROT = 0.0f;
+        X_COORD = 0.0f;
+        Y_COORD = 0.0f;
+        Z_COORD = -3.0f;
     }
 }

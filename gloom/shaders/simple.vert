@@ -15,5 +15,5 @@ void main()
     identityMatrix[2] = vec4(0,0,1,0);
     identityMatrix[3] = vec4(0,0,0,1);
     outVertexColor = vertexColor;
-    gl_Position = vec4(position, 1.0f) * m;
+    gl_Position = m * vec4(position, 1.0f);
 }
