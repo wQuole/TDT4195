@@ -1,3 +1,4 @@
+// Got to have some vector, you know
 #include "vector"
 // Local headers
 #include "program.hpp"
@@ -11,9 +12,11 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 
+// Beacuse I am lazy
 using namespace std;
 using namespace glm;
 
+// Constants
 GLuint NUM_OF_VERTCOORDS = 3;
 GLfloat X_COORD = 0.0f;
 GLfloat Y_COORD = 0.0f;
@@ -23,8 +26,6 @@ GLfloat Y_ROT = 0.0f;
 GLfloat Z_ROT = 0.0f;
 GLfloat COORD_SPEED = 1.0f;
 GLfloat ROT_SPEED = 0.337f;
-
-
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
 string const LUNAR_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\lunarsurface.obj)";
@@ -82,17 +83,17 @@ GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vec
 
 mat4 rotateAndTranslate() {
     // Create Perspective Matrices
-    mat4x4 Projection = perspective(radians(45.0f), 4.0f/3.0f, 1.0f, 1000.0f);
+    mat4x4 Projection_perspective_matrix = perspective(radians(45.0f), 4.0f/3.0f, 1.0f, 10000.0f);
 
     // Translation
-    mat4x4 View = translate(mat4(1.0f), vec3(X_COORD, Y_COORD, Z_COORD));
+    mat4x4 View_translation_matrix = translate(mat4(1.0f), vec3(X_COORD, Y_COORD, Z_COORD));
 
     // Rotation
-    mat4x4 X_rotMatrix = rotate(radians(X_ROT), vec3(1.0f, 0.0f, 0.0f));
-    mat4x4 Y_rotMatrix = rotate(radians(Y_ROT), vec3(0.0f, 1.0f, 0.0f));
+    mat4x4 X_rotation_matrix = rotate(radians(X_ROT), vec3(1.0f, 0.0f, 0.0f));
+    mat4x4 Y_rotation_matrix = rotate(radians(Y_ROT), vec3(0.0f, 1.0f, 0.0f));
 //    mat4x4 Z_rotMatrix = rotate(radians(Z_ROT), vec3(0.0f, 0.0f, 1.0f));
 
-    return Projection * X_rotMatrix * Y_rotMatrix *  View;
+    return Projection_perspective_matrix * X_rotation_matrix * Y_rotation_matrix * View_translation_matrix;
 }
 
 void basicSetup() {
