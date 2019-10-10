@@ -1,16 +1,19 @@
-#include <numeric>
-#include <cmath>
 #include "vector"
 // Local headers
 #include "program.hpp"
 #include "gloom/gloom.hpp"
 #include "gloom/shader.hpp"
+#include "mesh.hpp"
+#include "OBJLoader.hpp"
+#include "toolbox.hpp"
+#include "sceneGraph.hpp"
 // Glm headers
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 
 using namespace std;
+using namespace glm;
 
 unsigned int NUM_OF_VERTCOORDS = 3;
 GLfloat X_COORD = 0.0f;
@@ -18,6 +21,10 @@ GLfloat Y_COORD = 0.0f;
 GLfloat Z_COORD = -2.0f;
 GLfloat X_ROT = 0.0f;
 GLfloat Y_ROT = -0.0f;
+
+string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
+string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
+string const LUNAR_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\lunarsurface.obj)";
 
 // Declaring createVAO function
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors);
@@ -63,101 +70,61 @@ GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vec
     return vertexBufferID;
 }
 
-glm::mat4 rotateAndTranslate() {
-    // Create and perspective Matrices
-    glm::mat4x4 Projection = glm::perspective(glm::radians(45.0f), 4.0f/3.0f, 1.0f, 100.0f); // https://glm.g-truc.net/0.9.9/index.html
+mat4 rotateAndTranslate() {
+    // Create Perspective Matrices
+    mat4x4 Projection = perspective(radians(45.0f), 4.0f/3.0f, 1.0f, 1000.0f);
 
     // Translation
-    glm::mat4x4 View = glm::translate(glm::mat4(1.0f), glm::vec3(X_COORD, Y_COORD, Z_COORD));
-    glm::mat4x4 ViewTransposed = glm::transpose(View);
+    mat4x4 View = translate(mat4(1.0f), vec3(X_COORD, Y_COORD, Z_COORD));
+    mat4x4 ViewTransposed = transpose(View);
 
     // Rotation
-    glm::mat4x4 X_rotMatrix = glm::rotate(glm::radians(X_ROT), glm::vec3(1.0f, 0.0f, 0.0f));
-    glm::mat4x4 Y_rotMatrix = glm::rotate(glm::radians(Y_ROT), glm::vec3(0.0f, 1.0f, 0.0f));
+    mat4x4 X_rotMatrix = rotate(radians(X_ROT), vec3(1.0f, 0.0f, 0.0f));
+    mat4x4 Y_rotMatrix = rotate(radians(Y_ROT), vec3(0.0f, 1.0f, 0.0f));
 
     return X_rotMatrix * Y_rotMatrix * ViewTransposed * Projection;
 }
 
-void runProgram(GLFWwindow* window)
-{
+void basicSetup() {
     // Enable depth (Z) buffer (accept "closest" fragment)
-//    glEnable(GL_DEPTH_TEST);
-//    glDepthFunc(GL_GREATER);
+    glEnable(GL_DEPTH_TEST);
 
     // Configure miscellaneous OpenGL settings
-//    glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 
     // Enable transparency
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
     // Set default colour after clearing the colour buffer AKA setting the background color
-//    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
     glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+}
 
-    vector<GLfloat> threeOverlappingTriangles {
-            -0.60f, -0.25f, 0.7f,
-            -0.10f, -0.25f, 0.7f,
-            -0.35f,  0.3f, 0.7f,
-
-            -0.40f, -0.25f, 0.2f,
-            0.10f, -0.25f, 0.2f,
-            -0.15f,  0.3f, 0.2f,
-
-            -0.20f, -0.25f, 0.5f,
-            0.30f, -0.25f, 0.5f,
-            0.05f,  0.3f, 0.5f,
-    };
-
-    vector<GLfloat> threeOverlappingTrianglesColors = {
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.5f, 0.0f, 0.0f, 0.5f,
-            0.5f, 0.0f, 0.0f, 0.5f,
-
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-            0.0f, 0.5f, 0.0f, 0.5f,
-
-            0.0f, 0.0f, 0.5f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
-            0.0f, 0.0f, 0.5f, 0.5f,
-
-    };
-
-    string vertPath = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
-    string fragPath = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
-
-    // Fill the indices
-    vector<GLuint> triangleIndices(threeOverlappingTriangles.size());
-    iota(triangleIndices.begin(), triangleIndices.end(), 0);
-    GLuint numberOfVertices = (int) threeOverlappingTriangles.size() / NUM_OF_VERTCOORDS;
+void runProgram(GLFWwindow* window)
+{
+   basicSetup();
 
     // Activate shader and bind the Vertex Array
     Gloom::Shader shader;
-    shader.makeBasicShader(vertPath,fragPath);
+    shader.makeBasicShader(VERT_PATH, FRAG_PATH);
     shader.activate();
 
-    GLuint arrayID = createVAO(threeOverlappingTriangles, triangleIndices, threeOverlappingTrianglesColors);
-    glBindVertexArray(arrayID);
+    Mesh lunarTerrain = loadTerrainMesh(LUNAR_PATH);
+    GLuint VAO_ID = createVAO(lunarTerrain.vertices, lunarTerrain.indices, lunarTerrain.colours);
+    glBindVertexArray(VAO_ID);
 
+    GLuint numberOfVertices = (int) lunarTerrain.vertices.size() / NUM_OF_VERTCOORDS;
     // Rendering Loop
     printGLError();
-    GLuint increment =  0;
     while (!glfwWindowShouldClose(window))
     {
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Transform matrix
-        glm::mat4x4 TransformedMatrix = rotateAndTranslate();
+        mat4x4 TransformedMatrix = rotateAndTranslate();
 
         // Send to Vertex Shader
-        glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(TransformedMatrix));
-
-        // Modify oscillation
-        increment++;
-        if (increment > 360) increment = 0;
-        glUniform1f(2, sin(increment*(3.14/180)));
+        glUniformMatrix4fv(3, 1, GL_FALSE, value_ptr(TransformedMatrix));
 
         // Draw your scene here
         glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, nullptr);
@@ -175,6 +142,7 @@ void runProgram(GLFWwindow* window)
     shader.deactivate();
     shader.destroy();
 }
+
 
 void handleKeyboardInput(GLFWwindow* window)
 {
