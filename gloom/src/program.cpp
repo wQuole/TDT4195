@@ -25,8 +25,10 @@ GLfloat Z_ROT = 0.0f;
 GLfloat COORD_SPEED = 0.663f;
 GLfloat ROT_SPEED = 0.663;
 GLfloat CURRENT_TIME = 0.00f;
-GLfloat HELICOPTER_OFFSET = 0.5;
+GLfloat HELICOPTER_OFFSET = 2.0f;
 GLfloat HELICOPTER_ROTOR_SPEED = 100.0f;
+GLuint NUMBER_OF_CHOPPERS = 5;
+
 
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
@@ -124,29 +126,15 @@ mat4 rotateForReferencePoint(SceneNode* node) {
     return Translate_back_to_referencePoint * Z_rotation_matrix * Y_rotation_matrix * X_rotation_matrix * Translate_to_origin;
 }
 
-
-SceneNode* createSceneGraph() {
-
-    SceneNode* root = createSceneNode();
-    SceneNode* terrainNode = createSceneNode();
+SceneNode* addHeliCopter(Helicopter helicopter){
     SceneNode* heliBodyNode = createSceneNode();
     SceneNode* helimMainRotorNode = createSceneNode();
     SceneNode* heliTailRotorNode = createSceneNode();
     SceneNode* heliDoorNode = createSceneNode();
 
-    addChild(root, terrainNode);
-    addChild(terrainNode, heliBodyNode);
     addChild(heliBodyNode, helimMainRotorNode);
     addChild(heliBodyNode, heliTailRotorNode);
     addChild(heliBodyNode, heliDoorNode);
-
-    // Load Objects: LunarTerrain and Helicopter
-    Mesh lunarTerrain = loadTerrainMesh(LUNAR_PATH);
-    Helicopter helicopter = loadHelicopterModel(HELI_PATH);
-
-    // Set VAO_ID and VAOIndexCount for objects
-    terrainNode->vertexArrayObjectID = createMeshVAO(lunarTerrain);
-    terrainNode->VAOIndexCount = lunarTerrain.indices.size();
 
     heliBodyNode->vertexArrayObjectID = createMeshVAO(helicopter.body);
     heliBodyNode->VAOIndexCount = helicopter.body.indices.size();
@@ -163,12 +151,29 @@ SceneNode* createSceneGraph() {
     heliDoorNode->vertexArrayObjectID = createMeshVAO(helicopter.door);
     heliDoorNode->VAOIndexCount = helicopter.door.indices.size();
 
-    // Pretty-print the nodes
-    printNode(terrainNode);
-    printNode(heliBodyNode);
-    printNode(helimMainRotorNode);
-    printNode(heliTailRotorNode);
-    printNode(heliDoorNode);
+    return heliBodyNode;
+}
+
+SceneNode* addTerrain(Mesh lunarTerrain){
+    SceneNode* terrainNode = createSceneNode();
+
+    terrainNode->vertexArrayObjectID = createMeshVAO(lunarTerrain);
+    terrainNode->VAOIndexCount = lunarTerrain.indices.size();
+}
+
+SceneNode* createSceneGraph() {
+    Mesh lunarTerrain = loadTerrainMesh(LUNAR_PATH);
+    Helicopter helicopter = loadHelicopterModel(HELI_PATH);
+
+    SceneNode* root = createSceneNode();
+    SceneNode* terrainNode = addTerrain(lunarTerrain);
+
+    for (GLuint _ = 0; _ < NUMBER_OF_CHOPPERS; ++_) {
+        SceneNode* helibodyNode = addHeliCopter(helicopter);
+        addChild(terrainNode, helibodyNode);
+    }
+
+    addChild(root, terrainNode);
 
     return root;
 }
@@ -220,7 +225,7 @@ void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis
 void followPath(SceneNode* node, GLfloat elapsedTime){
     Heading heading = simpleHeadingAnimation(elapsedTime);
     node->position.x = heading.x;
-    node->position.y = cos(elapsedTime)*3.37f;
+    node->position.y = cos(elapsedTime)*4.20f;
     node->position.z = heading.z;
     node->rotation = vec3(heading.pitch, heading.yaw, heading.roll*cos(elapsedTime));
 }
@@ -238,6 +243,15 @@ void basicSetup() {
 }
 
 
+SceneNode* helicopterMainRotor (SceneNode* rootNode){
+    return rootNode->children[0];
+};
+
+SceneNode* helicopterTailRotor(SceneNode* rootNode) {
+    return rootNode->children[1];
+}
+
+
 void runProgram(GLFWwindow* window)
 {
    basicSetup();
@@ -249,8 +263,6 @@ void runProgram(GLFWwindow* window)
 
     SceneNode* rootNode = createSceneGraph();
     SceneNode* lunarMap = rootNode->children[0];
-    SceneNode* helicopterMainRotor = rootNode->children[0]->children[0]->children[0];
-    SceneNode* helicopterTailRotor = rootNode->children[0]->children[0]->children[1];
 
     // Rendering Loop
     printGLError();
@@ -265,24 +277,24 @@ void runProgram(GLFWwindow* window)
 
         GLdouble timeDelta = getTimeDeltaSeconds();
         GLfloat elapsedTime = static_cast<GLfloat>(timeDelta);
+        GLfloat anotherOffset = 0.0f;
         CURRENT_TIME += elapsedTime;
 
-        spinRotor(helicopterMainRotor, HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
-        spinRotor(helicopterTailRotor, HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
+
 
         for (SceneNode* child : lunarMap->children){
-            followPath(child, CURRENT_TIME);
+            followPath(child, CURRENT_TIME + anotherOffset*3.14);
+            anotherOffset++;
             elapsedTime += HELICOPTER_OFFSET;
+            spinRotor(helicopterTailRotor(child), HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
+            spinRotor(helicopterMainRotor(child), HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
         }
 
-//      Update Scene
+        // Update Scene
         updateSceneNode(rootNode, identityMatrix);
 
         // Draw your scene here
         drawSceneNode(rootNode, viewProjectionMatrix);
-
-        // Check if an OpenGL error occurred, if so print which
-        printGLError();
 
         // Handle other events
         glfwPollEvents();
