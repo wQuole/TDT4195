@@ -24,9 +24,8 @@ GLfloat Z_COORD = 15.0f;
 GLfloat X_ROT = 0.0f;
 GLfloat Y_ROT = 180.0f;
 GLfloat Z_ROT = 0.0f;
-GLfloat COORD_SPEED = 1.0f;
+GLfloat COORD_SPEED = 0.337f;
 GLfloat ROT_SPEED = 0.337f;
-GLfloat TIME_STEP = 1.0f;
 
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
@@ -208,15 +207,12 @@ void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis
         case 0:
             node->rotation.x += timeStep;
             break;
-
         case 1:
             node->rotation.y += timeStep;
             break;
-
         case 2:
             node->rotation.z += timeStep;
             break;
-
         default:
             break;
     }
@@ -236,17 +232,16 @@ void runProgram(GLFWwindow* window)
     SceneNode* helicopterMainRotor = rootNode->children[0]->children[0]->children[0];
     SceneNode* helicopterTailRotor = rootNode->children[0]->children[0]->children[1];
 
-
-    // Transformed matrix
-    mat4x4 identityMatrix = mat4(1.0f);
-    mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
-
     // Rendering Loop
     printGLError();
     while (!glfwWindowShouldClose(window))
     {
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Transformed matrix
+        mat4x4 identityMatrix = mat4(1.0f);
+        mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
 
         GLdouble elapsedTime = getTimeDeltaSeconds();
         spinRotor(helicopterMainRotor, 10.0f, elapsedTime, 1);
