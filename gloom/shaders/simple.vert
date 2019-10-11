@@ -8,11 +8,13 @@ out layout(location=1) vec4 outColor;
 out layout(location=2) vec3 outNormal;
 
 uniform layout(location=3) mat4 M;
+uniform layout(location=4) mat4 modelMatrix;
+
 
 void main()
 {
     outColor = color;
-    outNormal = normal;
+    outNormal = normalize(mat3(modelMatrix) * normal);
 
     gl_Position = M * vec4(position, 1.0f);
 }

@@ -11,7 +11,6 @@
 // Glm headers
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
-#include <algorithm>
 // Because I am lazy
 using namespace std;
 using namespace glm;
@@ -29,15 +28,24 @@ GLfloat CURRENT_TIME = 0.00f;
 GLfloat HELICOPTER_OFFSET = 0.5;
 GLfloat HELICOPTER_ROTOR_SPEED = 100.0f;
 
-
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
 string const LUNAR_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\lunarsurface.obj)";
 string const HELI_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\helicopter.obj)";
 
+
 // Declaring functions
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals);
 GLuint createMeshVAO(Mesh meshStruct);
+mat4 createviewProjectionMatrix();
+mat4 rotateForReferencePoint(SceneNode* node);
+SceneNode* createSceneGraph();
+void drawSceneNode(SceneNode* node, mat4 viewProjectionMatrix);
+void updateSceneNode(SceneNode* node, glm::mat4 transformationThusFar);
+void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis);
+void followPath(SceneNode* node, GLfloat elapsedTime);
+void basicSetup();
+
 
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals)
 {
@@ -86,9 +94,11 @@ GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vec
     return vertexArrayID;
 }
 
+
 GLuint createMeshVAO(Mesh meshStruct){
     return createVAO(meshStruct.vertices, meshStruct.indices, meshStruct.colours, meshStruct.normals);
 }
+
 
 mat4 createviewProjectionMatrix() {
     mat4x4 Projection_perspective_matrix = perspective(radians(45.0f), 4.0f/3.0f, 1.0f, 10000.0f);
@@ -100,12 +110,8 @@ mat4 createviewProjectionMatrix() {
 
     return Projection_perspective_matrix * X_rotation_matrix * Y_rotation_matrix * View_translation_matrix;
 }
-/*
-    "In order to rotate the back wheel around the reference point, you would first have to move it
-    to the origin, then apply the rotation, and finally move it back to where it was. Conveniently,
-    a movement to the origin is accomplished simply by translating by a vector which is the
-    inverse of the reference point."
- */
+
+
 mat4 rotateForReferencePoint(SceneNode* node) {
     mat4x4 Translate_to_origin = translate(-(node->referencePoint));
 
@@ -116,20 +122,6 @@ mat4 rotateForReferencePoint(SceneNode* node) {
     mat4x4 Translate_back_to_referencePoint = translate((node->referencePoint));
 
     return Translate_back_to_referencePoint * Z_rotation_matrix * Y_rotation_matrix * X_rotation_matrix * Translate_to_origin;
-}
-
-void basicSetup() {
-    // Enable depth (Z) buffer (accept "closest" fragment)
-    glEnable(GL_DEPTH_TEST);
-
-    // Configure miscellaneous OpenGL settings
-    glEnable(GL_CULL_FACE);
-
-    // Enable transparency
-    glEnable(GL_BLEND);
-
-    // Set default colour after clearing the colour buffer AKA setting the background color
-    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 }
 
 
@@ -182,10 +174,11 @@ SceneNode* createSceneGraph() {
 }
 
 
-void drawSceneNode(SceneNode* node, glm::mat4 viewProjectionMatrix) {
+void drawSceneNode(SceneNode* node, mat4 viewProjectionMatrix) {
     // Send to Vertex Shader
     mat4x4 ModelViewProjection_Matrix = viewProjectionMatrix*(node->currentTransformationMatrix);
     glUniformMatrix4fv(3, 1, GL_FALSE, value_ptr(ModelViewProjection_Matrix));
+    glUniformMatrix4fv(4, 1, GL_FALSE, value_ptr(node->currentTransformationMatrix));
 
     glBindVertexArray(node->vertexArrayObjectID);
     glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
@@ -203,6 +196,7 @@ void updateSceneNode(SceneNode* node, glm::mat4 transformationThusFar) {
         updateSceneNode(child, node->currentTransformationMatrix);
     }
 }
+
 
 void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis){
     GLfloat timeStep = speed * elapsedTime;
@@ -228,8 +222,19 @@ void followPath(SceneNode* node, GLfloat elapsedTime){
     node->position.x = heading.x;
     node->position.y = cos(elapsedTime)*3.37f;
     node->position.z = heading.z;
-
     node->rotation = vec3(heading.pitch, heading.yaw, heading.roll*cos(elapsedTime));
+}
+
+
+void basicSetup() {
+    // Enable depth (Z) buffer (accept "closest" fragment)
+    glEnable(GL_DEPTH_TEST);
+    // Configure miscellaneous OpenGL settings
+    glEnable(GL_CULL_FACE);
+    // Enable transparency
+    glEnable(GL_BLEND);
+    // Set default colour after clearing the colour buffer AKA setting the background color
+    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 }
 
 
