@@ -17,15 +17,18 @@ using namespace std;
 using namespace glm;
 
 // CONSTANTS
-GLuint NUM_OF_VERTCOORDS = 3;
 GLfloat X_COORD = 0.0f;
 GLfloat Y_COORD = 0.0f;
-GLfloat Z_COORD = 15.0f;
+GLfloat Z_COORD = 0.0f;
 GLfloat X_ROT = 0.0f;
-GLfloat Y_ROT = 180.0f;
+GLfloat Y_ROT = 0.0f;
 GLfloat Z_ROT = 0.0f;
-GLfloat COORD_SPEED = 0.337f;
-GLfloat ROT_SPEED = 0.337f;
+GLfloat COORD_SPEED = 0.663f;
+GLfloat ROT_SPEED = 0.663;
+GLfloat CURRENT_TIME = 0.00f;
+GLfloat HELICOPTER_OFFSET = 0.5;
+GLfloat HELICOPTER_ROTOR_SPEED = 100.0f;
+
 
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
@@ -34,7 +37,7 @@ string const HELI_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\helicopte
 
 // Declaring functions
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals);
-//GLuint createMeshVAO(Mesh meshStruct);
+GLuint createMeshVAO(Mesh meshStruct);
 
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals)
 {
@@ -155,6 +158,7 @@ SceneNode* createSceneGraph() {
 
     heliBodyNode->vertexArrayObjectID = createMeshVAO(helicopter.body);
     heliBodyNode->VAOIndexCount = helicopter.body.indices.size();
+    heliBodyNode->referencePoint = vec3(0.0f, 40.0f, 0.0f);
 
     helimMainRotorNode->vertexArrayObjectID = createMeshVAO(helicopter.mainRotor);
     helimMainRotorNode->VAOIndexCount = helicopter.mainRotor.indices.size();
@@ -201,7 +205,7 @@ void updateSceneNode(SceneNode* node, glm::mat4 transformationThusFar) {
 }
 
 void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis){
-    GLfloat timeStep = speed * static_cast<GLfloat>(elapsedTime);
+    GLfloat timeStep = speed * elapsedTime;
 
     switch(axis) {
         case 0:
@@ -219,6 +223,16 @@ void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis
 }
 
 
+void followPath(SceneNode* node, GLfloat elapsedTime){
+    Heading heading = simpleHeadingAnimation(elapsedTime);
+    node->position.x = heading.x;
+    node->position.y = cos(elapsedTime)*3.37f;
+    node->position.z = heading.z;
+
+    node->rotation = vec3(heading.pitch, heading.yaw, heading.roll*cos(elapsedTime));
+}
+
+
 void runProgram(GLFWwindow* window)
 {
    basicSetup();
@@ -229,6 +243,7 @@ void runProgram(GLFWwindow* window)
     shader.activate();
 
     SceneNode* rootNode = createSceneGraph();
+    SceneNode* lunarMap = rootNode->children[0];
     SceneNode* helicopterMainRotor = rootNode->children[0]->children[0]->children[0];
     SceneNode* helicopterTailRotor = rootNode->children[0]->children[0]->children[1];
 
@@ -239,13 +254,21 @@ void runProgram(GLFWwindow* window)
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Transformed matrix
+        // Update the ViewProjectionMatrix
         mat4x4 identityMatrix = mat4(1.0f);
         mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
 
-        GLdouble elapsedTime = getTimeDeltaSeconds();
-        spinRotor(helicopterMainRotor, 10.0f, elapsedTime, 1);
-        spinRotor(helicopterTailRotor, 10.0f, elapsedTime, 0);
+        GLdouble timeDelta = getTimeDeltaSeconds();
+        GLfloat elapsedTime = static_cast<GLfloat>(timeDelta);
+        CURRENT_TIME += elapsedTime;
+
+        spinRotor(helicopterMainRotor, HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
+        spinRotor(helicopterTailRotor, HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
+
+        for (SceneNode* child : lunarMap->children){
+            followPath(child, CURRENT_TIME);
+            elapsedTime += HELICOPTER_OFFSET;
+        }
 
 //      Update Scene
         updateSceneNode(rootNode, identityMatrix);
