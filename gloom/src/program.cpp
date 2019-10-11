@@ -11,6 +11,7 @@
 // Glm headers
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
+#include <algorithm>
 // Because I am lazy
 using namespace std;
 using namespace glm;
@@ -25,6 +26,7 @@ GLfloat Y_ROT = 180.0f;
 GLfloat Z_ROT = 0.0f;
 GLfloat COORD_SPEED = 1.0f;
 GLfloat ROT_SPEED = 0.337f;
+GLfloat TIME_STEP = 1.0f;
 
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
@@ -199,6 +201,27 @@ void updateSceneNode(SceneNode* node, glm::mat4 transformationThusFar) {
     }
 }
 
+void spinRotor(SceneNode* node, GLfloat speed, GLdouble elapsedTime, GLuint axis){
+    GLfloat timeStep = speed * static_cast<GLfloat>(elapsedTime);
+
+    switch(axis) {
+        case 0:
+            node->rotation.x += timeStep;
+            break;
+
+        case 1:
+            node->rotation.y += timeStep;
+            break;
+
+        case 2:
+            node->rotation.z += timeStep;
+            break;
+
+        default:
+            break;
+    }
+}
+
 
 void runProgram(GLFWwindow* window)
 {
@@ -209,6 +232,15 @@ void runProgram(GLFWwindow* window)
     shader.makeBasicShader(VERT_PATH, FRAG_PATH);
     shader.activate();
 
+    SceneNode* rootNode = createSceneGraph();
+    SceneNode* helicopterMainRotor = rootNode->children[0]->children[0]->children[0];
+    SceneNode* helicopterTailRotor = rootNode->children[0]->children[0]->children[1];
+
+
+    // Transformed matrix
+    mat4x4 identityMatrix = mat4(1.0f);
+    mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
+
     // Rendering Loop
     printGLError();
     while (!glfwWindowShouldClose(window))
@@ -216,20 +248,11 @@ void runProgram(GLFWwindow* window)
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Transformed matrix
-        mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
+        GLdouble elapsedTime = getTimeDeltaSeconds();
+        spinRotor(helicopterMainRotor, 10.0f, elapsedTime, 1);
+        spinRotor(helicopterTailRotor, 10.0f, elapsedTime, 0);
 
-        SceneNode* rootNode = createSceneGraph();
-
-        GLdouble timeStep = getTimeDeltaSeconds();
-        for (SceneNode* node : rootNode->children){
-            if (node->children.size() == 0){
-                node->rotation = vec3(0, 1000 * timeStep, 0);
-            }
-        }
-
-//         Update Scene
-        mat4x4 identityMatrix = mat4(1.0f);
+//      Update Scene
         updateSceneNode(rootNode, identityMatrix);
 
         // Draw your scene here
