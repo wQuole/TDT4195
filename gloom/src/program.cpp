@@ -11,29 +11,30 @@
 // Glm headers
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
-
-// Beacuse I am lazy
+// Because I am lazy
 using namespace std;
 using namespace glm;
 
-// Constants
+// CONSTANTS
 GLuint NUM_OF_VERTCOORDS = 3;
 GLfloat X_COORD = 0.0f;
 GLfloat Y_COORD = 0.0f;
-GLfloat Z_COORD = -1.0f;
+GLfloat Z_COORD = 15.0f;
 GLfloat X_ROT = 0.0f;
-GLfloat Y_ROT = 0.0f;
+GLfloat Y_ROT = 180.0f;
 GLfloat Z_ROT = 0.0f;
 GLfloat COORD_SPEED = 1.0f;
 GLfloat ROT_SPEED = 0.337f;
+
 string const VERT_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.vert)";
 string const FRAG_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\shaders\simple.frag)";
 string const LUNAR_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\lunarsurface.obj)";
+string const HELI_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\helicopter.obj)";
 
-// Declaring createVAO function
-GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors);
+// Declaring functions
+GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals);
+//GLuint createMeshVAO(Mesh meshStruct);
 
-// Defining createVAO function
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals)
 {
     auto dataWhichShouldBeCopiedToTheGPU = vertexIndices.size() * sizeof(GLuint);
@@ -78,22 +79,39 @@ GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vec
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, dataWhichShouldBeCopiedToTheGPU, &vertexIndices.front(), GL_STATIC_DRAW);
 
-    return vertexBufferID;
+    return vertexArrayID;
 }
 
-mat4 rotateAndTranslate() {
-    // Create Perspective Matrices
+GLuint createMeshVAO(Mesh meshStruct){
+    return createVAO(meshStruct.vertices, meshStruct.indices, meshStruct.colours, meshStruct.normals);
+}
+
+mat4 createviewProjectionMatrix() {
     mat4x4 Projection_perspective_matrix = perspective(radians(45.0f), 4.0f/3.0f, 1.0f, 10000.0f);
 
-    // Translation
     mat4x4 View_translation_matrix = translate(mat4(1.0f), vec3(X_COORD, Y_COORD, Z_COORD));
 
-    // Rotation
     mat4x4 X_rotation_matrix = rotate(radians(X_ROT), vec3(1.0f, 0.0f, 0.0f));
     mat4x4 Y_rotation_matrix = rotate(radians(Y_ROT), vec3(0.0f, 1.0f, 0.0f));
-//    mat4x4 Z_rotMatrix = rotate(radians(Z_ROT), vec3(0.0f, 0.0f, 1.0f));
 
     return Projection_perspective_matrix * X_rotation_matrix * Y_rotation_matrix * View_translation_matrix;
+}
+/*
+    "In order to rotate the back wheel around the reference point, you would first have to move it
+    to the origin, then apply the rotation, and finally move it back to where it was. Conveniently,
+    a movement to the origin is accomplished simply by translating by a vector which is the
+    inverse of the reference point."
+ */
+mat4 rotateForReferencePoint(SceneNode* node) {
+    mat4x4 Translate_to_origin = translate(-(node->referencePoint));
+
+    mat4 X_rotation_matrix = rotate(node->rotation.x, vec3(1.0f, 0.0f, 0.0f));
+    mat4 Y_rotation_matrix = rotate(node->rotation.y, vec3(0.0f, 1.0f, 0.0f));
+    mat4 Z_rotation_matrix = rotate(node->rotation.z, vec3(0.0f, 0.0f, 1.0f));
+
+    mat4x4 Translate_back_to_referencePoint = translate((node->referencePoint));
+
+    return Translate_back_to_referencePoint * Z_rotation_matrix * Y_rotation_matrix * X_rotation_matrix * Translate_to_origin;
 }
 
 void basicSetup() {
@@ -110,6 +128,78 @@ void basicSetup() {
     glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 }
 
+
+SceneNode* createSceneGraph() {
+
+    SceneNode* root = createSceneNode();
+    SceneNode* terrainNode = createSceneNode();
+    SceneNode* heliBodyNode = createSceneNode();
+    SceneNode* helimMainRotorNode = createSceneNode();
+    SceneNode* heliTailRotorNode = createSceneNode();
+    SceneNode* heliDoorNode = createSceneNode();
+
+    addChild(root, terrainNode);
+    addChild(terrainNode, heliBodyNode);
+    addChild(heliBodyNode, helimMainRotorNode);
+    addChild(heliBodyNode, heliTailRotorNode);
+    addChild(heliBodyNode, heliDoorNode);
+
+    // Load Objects: LunarTerrain and Helicopter
+    Mesh lunarTerrain = loadTerrainMesh(LUNAR_PATH);
+    Helicopter helicopter = loadHelicopterModel(HELI_PATH);
+
+    // Set VAO_ID and VAOIndexCount for objects
+    terrainNode->vertexArrayObjectID = createMeshVAO(lunarTerrain);
+    terrainNode->VAOIndexCount = lunarTerrain.indices.size();
+
+    heliBodyNode->vertexArrayObjectID = createMeshVAO(helicopter.body);
+    heliBodyNode->VAOIndexCount = helicopter.body.indices.size();
+
+    helimMainRotorNode->vertexArrayObjectID = createMeshVAO(helicopter.mainRotor);
+    helimMainRotorNode->VAOIndexCount = helicopter.mainRotor.indices.size();
+    helimMainRotorNode->referencePoint = vec3(0.0f, 0.0f, 0.0f);
+
+    heliTailRotorNode->vertexArrayObjectID = createMeshVAO(helicopter.tailRotor);
+    heliTailRotorNode->VAOIndexCount = helicopter.tailRotor.indices.size();
+    heliTailRotorNode->referencePoint = vec3(0.35, 2.3, 10.4);
+
+    heliDoorNode->vertexArrayObjectID = createMeshVAO(helicopter.door);
+    heliDoorNode->VAOIndexCount = helicopter.door.indices.size();
+
+    // Pretty-print the nodes
+    printNode(terrainNode);
+    printNode(heliBodyNode);
+    printNode(helimMainRotorNode);
+    printNode(heliTailRotorNode);
+    printNode(heliDoorNode);
+
+    return root;
+}
+
+
+void drawSceneNode(SceneNode* node, glm::mat4 viewProjectionMatrix) {
+    // Send to Vertex Shader
+    mat4x4 ModelViewProjection_Matrix = viewProjectionMatrix*(node->currentTransformationMatrix);
+    glUniformMatrix4fv(3, 1, GL_FALSE, value_ptr(ModelViewProjection_Matrix));
+
+    glBindVertexArray(node->vertexArrayObjectID);
+    glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+
+    for (SceneNode* child : node->children) {
+        drawSceneNode(child, viewProjectionMatrix);
+    }
+}
+
+
+void updateSceneNode(SceneNode* node, glm::mat4 transformationThusFar) {
+    node->currentTransformationMatrix = transformationThusFar * translate(node->position) * rotateForReferencePoint(node);
+
+    for(SceneNode* child : node->children) {
+        updateSceneNode(child, node->currentTransformationMatrix);
+    }
+}
+
+
 void runProgram(GLFWwindow* window)
 {
    basicSetup();
@@ -119,11 +209,6 @@ void runProgram(GLFWwindow* window)
     shader.makeBasicShader(VERT_PATH, FRAG_PATH);
     shader.activate();
 
-    Mesh lunarTerrain = loadTerrainMesh(LUNAR_PATH);
-    GLuint VAO_ID = createVAO(lunarTerrain.vertices, lunarTerrain.indices, lunarTerrain.colours, lunarTerrain.normals);
-    glBindVertexArray(VAO_ID);
-
-    GLuint numberOfVertices = (int) lunarTerrain.vertices.size() / NUM_OF_VERTCOORDS;
     // Rendering Loop
     printGLError();
     while (!glfwWindowShouldClose(window))
@@ -131,14 +216,24 @@ void runProgram(GLFWwindow* window)
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Transform matrix
-        mat4x4 TransformedMatrix = rotateAndTranslate();
+        // Transformed matrix
+        mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
 
-        // Send to Vertex Shader
-        glUniformMatrix4fv(3, 1, GL_FALSE, value_ptr(TransformedMatrix));
+        SceneNode* rootNode = createSceneGraph();
+
+        GLdouble timeStep = getTimeDeltaSeconds();
+        for (SceneNode* node : rootNode->children){
+            if (node->children.size() == 0){
+                node->rotation = vec3(0, 1000 * timeStep, 0);
+            }
+        }
+
+//         Update Scene
+        mat4x4 identityMatrix = mat4(1.0f);
+        updateSceneNode(rootNode, identityMatrix);
 
         // Draw your scene here
-        glDrawElements(GL_TRIANGLES, numberOfVertices, GL_UNSIGNED_INT, nullptr);
+        drawSceneNode(rootNode, viewProjectionMatrix);
 
         // Check if an OpenGL error occurred, if so print which
         printGLError();
@@ -157,7 +252,6 @@ void runProgram(GLFWwindow* window)
 
 void handleKeyboardInput(GLFWwindow* window)
 {
-    // Use escape key for terminating the GLFW window
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
