@@ -243,13 +243,10 @@ void basicSetup() {
 }
 
 
-SceneNode* helicopterMainRotor (SceneNode* rootNode){
-    return rootNode->children[0];
+SceneNode* helicopterRotor (SceneNode* rootNode, GLuint mainOrTail){
+    // TAIL = 0, MAIN = 1
+    return rootNode->children[mainOrTail];
 };
-
-SceneNode* helicopterTailRotor(SceneNode* rootNode) {
-    return rootNode->children[1];
-}
 
 
 void runProgram(GLFWwindow* window)
@@ -276,18 +273,16 @@ void runProgram(GLFWwindow* window)
         mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
 
         GLdouble timeDelta = getTimeDeltaSeconds();
-        GLfloat elapsedTime = static_cast<GLfloat>(timeDelta);
+        auto elapsedTime = static_cast<GLfloat>(timeDelta);
         GLfloat anotherOffset = 0.0f;
         CURRENT_TIME += elapsedTime;
-
-
 
         for (SceneNode* child : lunarMap->children){
             followPath(child, CURRENT_TIME + anotherOffset*3.14);
             anotherOffset++;
             elapsedTime += HELICOPTER_OFFSET;
-            spinRotor(helicopterTailRotor(child), HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
-            spinRotor(helicopterMainRotor(child), HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
+            spinRotor(helicopterRotor(child, 1), HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
+            spinRotor(helicopterRotor(child, 0), HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
         }
 
         // Update Scene
