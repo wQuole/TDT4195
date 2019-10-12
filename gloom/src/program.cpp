@@ -21,11 +21,9 @@ GLfloat Y_COORD = 0.0f;
 GLfloat Z_COORD = 0.0f;
 GLfloat X_ROT = 0.0f;
 GLfloat Y_ROT = 0.0f;
-GLfloat Z_ROT = 0.0f;
 GLfloat COORD_SPEED = 0.663f;
 GLfloat ROT_SPEED = 0.663;
 GLfloat CURRENT_TIME = 0.00f;
-GLfloat HELICOPTER_OFFSET = 2.0f;
 GLfloat HELICOPTER_ROTOR_SPEED = 100.0f;
 GLuint NUMBER_OF_CHOPPERS = 5;
 
@@ -39,7 +37,7 @@ string const HELI_PATH = R"(C:\Users\wquole\code\cppCode\TDT4195\gloom\helicopte
 // Declaring functions
 GLuint createVAO(vector<GLfloat> vertexCoords, vector<GLuint> vertexIndices, vector<GLfloat> colors, vector<GLfloat> surfaceNormals);
 GLuint createMeshVAO(Mesh meshStruct);
-mat4 createviewProjectionMatrix();
+mat4 createViewProjectionMatrix();
 mat4 rotateForReferencePoint(SceneNode* node);
 SceneNode* createSceneGraph();
 void drawSceneNode(SceneNode* node, mat4 viewProjectionMatrix);
@@ -102,29 +100,26 @@ GLuint createMeshVAO(Mesh meshStruct){
 }
 
 
-mat4 createviewProjectionMatrix() {
-    mat4x4 Projection_perspective_matrix = perspective(radians(45.0f), 4.0f/3.0f, 1.0f, 10000.0f);
+mat4 createViewProjectionMatrix() {
+    mat4 projectionPerspectiveMatrix = perspective(radians(45.0f), 4.0f / 3.0f, 1.0f, 10000.0f);
+    mat4 viewTranslationMatrix = translate(mat4(1.0f), vec3(X_COORD, Y_COORD, Z_COORD));
+    mat4 X_rotationMatrix = rotate(radians(X_ROT), vec3(1.0f, 0.0f, 0.0f));
+    mat4 Y_rotationMatrix = rotate(radians(Y_ROT), vec3(0.0f, 1.0f, 0.0f));
 
-    mat4x4 View_translation_matrix = translate(mat4(1.0f), vec3(X_COORD, Y_COORD, Z_COORD));
-
-    mat4x4 X_rotation_matrix = rotate(radians(X_ROT), vec3(1.0f, 0.0f, 0.0f));
-    mat4x4 Y_rotation_matrix = rotate(radians(Y_ROT), vec3(0.0f, 1.0f, 0.0f));
-
-    return Projection_perspective_matrix * X_rotation_matrix * Y_rotation_matrix * View_translation_matrix;
+    return projectionPerspectiveMatrix * X_rotationMatrix * Y_rotationMatrix * viewTranslationMatrix;
 }
 
 
 mat4 rotateForReferencePoint(SceneNode* node) {
-    mat4x4 Translate_to_origin = translate(-(node->referencePoint));
+    mat4 translateToOrigin = translate(-(node->referencePoint));
+    mat4 X_RotationMatrix = rotate(node->rotation.x, vec3(1.0f, 0.0f, 0.0f));
+    mat4 Y_RotationMatrix = rotate(node->rotation.y, vec3(0.0f, 1.0f, 0.0f));
+    mat4 Z_RotationMatrix = rotate(node->rotation.z, vec3(0.0f, 0.0f, 1.0f));
+    mat4 translateBackToReferencePoint = translate((node->referencePoint));
 
-    mat4 X_rotation_matrix = rotate(node->rotation.x, vec3(1.0f, 0.0f, 0.0f));
-    mat4 Y_rotation_matrix = rotate(node->rotation.y, vec3(0.0f, 1.0f, 0.0f));
-    mat4 Z_rotation_matrix = rotate(node->rotation.z, vec3(0.0f, 0.0f, 1.0f));
-
-    mat4x4 Translate_back_to_referencePoint = translate((node->referencePoint));
-
-    return Translate_back_to_referencePoint * Z_rotation_matrix * Y_rotation_matrix * X_rotation_matrix * Translate_to_origin;
+    return translateBackToReferencePoint * Z_RotationMatrix * Y_RotationMatrix * X_RotationMatrix * translateToOrigin;
 }
+
 
 SceneNode* addHeliCopter(Helicopter helicopter){
     SceneNode* heliBodyNode = createSceneNode();
@@ -154,12 +149,16 @@ SceneNode* addHeliCopter(Helicopter helicopter){
     return heliBodyNode;
 }
 
+
 SceneNode* addTerrain(Mesh lunarTerrain){
     SceneNode* terrainNode = createSceneNode();
 
     terrainNode->vertexArrayObjectID = createMeshVAO(lunarTerrain);
     terrainNode->VAOIndexCount = lunarTerrain.indices.size();
+
+    return terrainNode;
 }
+
 
 SceneNode* createSceneGraph() {
     Mesh lunarTerrain = loadTerrainMesh(LUNAR_PATH);
@@ -181,7 +180,7 @@ SceneNode* createSceneGraph() {
 
 void drawSceneNode(SceneNode* node, mat4 viewProjectionMatrix) {
     // Send to Vertex Shader
-    mat4x4 ModelViewProjection_Matrix = viewProjectionMatrix*(node->currentTransformationMatrix);
+    mat4 ModelViewProjection_Matrix = viewProjectionMatrix*(node->currentTransformationMatrix);
     glUniformMatrix4fv(3, 1, GL_FALSE, value_ptr(ModelViewProjection_Matrix));
     glUniformMatrix4fv(4, 1, GL_FALSE, value_ptr(node->currentTransformationMatrix));
 
@@ -239,14 +238,14 @@ void basicSetup() {
     // Enable transparency
     glEnable(GL_BLEND);
     // Set default colour after clearing the colour buffer AKA setting the background color
-    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+    glClearColor(0.9f, 1.0f, 0.9f, 1.0f);
 }
 
 
-SceneNode* helicopterRotor (SceneNode* rootNode, GLuint mainOrTail){
+SceneNode* getHelicopterRotor (SceneNode* rootNode, GLuint mainOrTail){
     // TAIL = 0, MAIN = 1
     return rootNode->children[mainOrTail];
-};
+}
 
 
 void runProgram(GLFWwindow* window)
@@ -258,6 +257,7 @@ void runProgram(GLFWwindow* window)
     shader.makeBasicShader(VERT_PATH, FRAG_PATH);
     shader.activate();
 
+    // Create root node for the SceneGraph
     SceneNode* rootNode = createSceneGraph();
     SceneNode* lunarMap = rootNode->children[0];
 
@@ -268,22 +268,21 @@ void runProgram(GLFWwindow* window)
         // Clear colour and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Update the ViewProjectionMatrix
-        mat4x4 identityMatrix = mat4(1.0f);
-        mat4x4 viewProjectionMatrix = createviewProjectionMatrix();
-
         GLdouble timeDelta = getTimeDeltaSeconds();
         auto elapsedTime = static_cast<GLfloat>(timeDelta);
-        GLfloat anotherOffset = 0.0f;
-        CURRENT_TIME += elapsedTime;
+        GLfloat helicopterInitOffset = 0.0f; // resets for each
 
+        CURRENT_TIME += elapsedTime;
         for (SceneNode* child : lunarMap->children){
-            followPath(child, CURRENT_TIME + anotherOffset*3.14);
-            anotherOffset++;
-            elapsedTime += HELICOPTER_OFFSET;
-            spinRotor(helicopterRotor(child, 1), HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
-            spinRotor(helicopterRotor(child, 0), HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
+            followPath(child, CURRENT_TIME + helicopterInitOffset * 3.14);
+            helicopterInitOffset++;
+            spinRotor(getHelicopterRotor(child, 1), HELICOPTER_ROTOR_SPEED, elapsedTime, 0);
+            spinRotor(getHelicopterRotor(child, 0), HELICOPTER_ROTOR_SPEED, elapsedTime, 1);
         }
+
+        // Update the ViewProjectionMatrix
+        mat4 identityMatrix = mat4(1.0f);
+        mat4 viewProjectionMatrix = createViewProjectionMatrix();
 
         // Update Scene
         updateSceneNode(rootNode, identityMatrix);
