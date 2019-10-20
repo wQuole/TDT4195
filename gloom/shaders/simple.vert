@@ -1,15 +1,20 @@
-#version 410 core
+#version 450 core
 
 in vec3 position;
-layout(location=2) in vec4 vertexColor;
+in layout(location=1) vec4 color;
+in layout(location=2) vec3 normal;
 
-// uniform layout(location=4) mat4 m;
-layout(location=2) out vec4 outVertexColor;
+out layout(location=1) vec4 outColor;
+out layout(location=2) vec3 outNormal;
+
+uniform layout(location=3) mat4 M;
+uniform layout(location=4) mat4 modelMatrix;
+
 
 void main()
 {
-    outVertexColor = vertexColor;
+    outColor = color;
+    outNormal = normalize(mat3(modelMatrix) * normal);
 
-    //mat4x4 identityMatrix = mat4(1);
-    gl_Position = vec4(position, 1.0f) ;
+    gl_Position = M * vec4(position, 1.0f);
 }
