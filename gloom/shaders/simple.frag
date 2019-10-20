@@ -11,5 +11,3 @@ void main()
 {
     fragColor = color * max(0.0f, dot(normal, -lightDirection));
 }
-
-
